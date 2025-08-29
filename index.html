@@ -64,6 +64,22 @@
       [{input: "0", className: "flex-1 h-16"}, {input: ","}, {input: "=", className: "w-16 h-16 bg-[#7f45e2]"}]
     ];
 
+    const CalculartorContext = React.createContext();
+
+    function CalculatorProvider({children}){
+      const [history, setHistory] = React.useState([]);
+
+      function updateHistory(operation, parsedResult){
+        setHistory((prev)=> [...prev, `${operation}=${parsedResult}`]);
+      }
+
+      return(
+        <CalculartorContext.Provider value={{history, updateHistory}}>
+          {children}
+        </CalculartorContext.Provider>
+      );
+    }
+
     function Text({
       as = 'span', 
       variant= 'default',
@@ -130,6 +146,7 @@
     function Calculator(){
       const [operation, setOperation] = React.useState('');
       const [result, setResult] = React.useState('');
+      const {updateHistory} = React.useContext(CalculartorContext);
 
       function handleInputClick(input){
         if(input === 'C'){
@@ -149,6 +166,7 @@
           const operationResult = eval(operation.replace(/,/g, '.'));
           const parseResult = operationResult.toString()?.replace(/\./g, ',');
           setResult(parseResult);
+          updateHistory(operation, parseResult);
           return;
         }
 
@@ -192,14 +210,15 @@
     }
 
     function OperationHistory(){
+      const {history} = React.useContext(CalculartorContext);
+
       return(
         <Card className="w-[22.25rem] py-10 px-8">
           <Text as="h1" variant="heading" className="mb-4">Histórico de Operações</Text>
           <ul className="flex flex-col gap-3">
-            <Text as="li">1 + 1 = 2</Text>
-            <Text as="li">1 + 1 = 2</Text>
-            <Text as="li">1 + 1 = 2</Text>
-            <Text as="li">1 + 1 = 2</Text>
+            {history.map((value, index)=> 
+              <Text key={`${value}${index}`} as="li">{value}</Text>
+            )}
           </ul>
         </Card>
       );
@@ -213,8 +232,10 @@
           flex flex-col items-center justify-center
           sm:flex-row sm:items-stretch
         `}>
-          <Calculator />
-          <OperationHistory />
+          <CalculatorProvider>
+            <Calculator />
+            <OperationHistory />
+          </CalculatorProvider>
         </main>
       );
     }
